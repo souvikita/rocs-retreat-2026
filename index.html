@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RoCS Retreat Speed Dating</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout: one column (max 820px), compact header, tab nav, the current round as a big card. */
+  --bg:#f2f4f8;
+  --surface:#ffffff;
+  --ink:#161c29;
+  --muted:#5b6478;
+  --line:#d8dde8;
+  --accent:#b9163a;
+  --accent-ink:#ffffff;
+  --accent-soft:#fbe7ec;
+  --ok:#1d7a4f;
+  --ok-soft:#e2f3ea;
+  --display:'Helvetica Neue',Helvetica,Arial,system-ui,sans-serif;
+  --body:'IBM Plex Sans',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f131c; --surface:#171d2a; --ink:#e7ebf3; --muted:#9aa4b8; --line:#2a3345;
+    --accent:#ff5f78; --accent-ink:#1a0a0f; --accent-soft:#3a1a23; --ok:#5fd39a; --ok-soft:#163626;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f131c; --surface:#171d2a; --ink:#e7ebf3; --muted:#9aa4b8; --line:#2a3345;
+  --accent:#ff5f78; --accent-ink:#1a0a0f; --accent-soft:#3a1a23; --ok:#5fd39a; --ok-soft:#163626;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+a{color:var(--accent)}
+.wrap{max-width:820px;margin:0 auto;padding:20px 16px 64px}
+header{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:14px}
+header .lead{display:flex;align-items:center;gap:16px;min-width:0}
+header .titles{display:flex;flex-direction:column;gap:6px;min-width:0}
+.heart{flex:0 0 auto;width:72px;height:72px;color:var(--accent);filter:drop-shadow(0 4px 10px rgba(185,22,58,0.25))}
+.heart svg{width:100%;height:100%;fill:currentColor;display:block;transform-origin:50% 55%}
+@keyframes beat{0%,100%{transform:scale(1)}14%{transform:scale(1.14)}28%{transform:scale(1)}42%{transform:scale(1.1)}60%{transform:scale(1)}}
+@media (prefers-reduced-motion: no-preference){ .heart svg{animation:beat 1.8s ease-in-out infinite} }
+.big .partner .mini{color:var(--accent);margin-right:6px}
+.logo{flex:0 0 auto;display:block;width:150px;border-radius:8px}
+.logo img{display:block;width:100%;height:auto}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .logo{background:#ffffff;padding:6px 8px} }
+:root[data-theme="dark"] .logo{background:#ffffff;padding:6px 8px}
+@media (max-width:520px){ header{flex-direction:column-reverse;align-items:flex-start} .logo{width:120px} .heart{width:56px;height:56px} }
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,5vw,36px);line-height:1.05;margin:0;text-wrap:balance;letter-spacing:-0.02em}
+.sub{color:var(--muted);font-size:14px;margin:0}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 22px;border-bottom:1px solid var(--line);padding-bottom:10px}
+nav a{text-decoration:none;color:var(--muted);padding:7px 12px;border-radius:999px;font-weight:500;font-size:14px;border:1px solid transparent}
+nav a:hover{color:var(--ink)}
+nav a.active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+nav a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+h2{font-family:var(--display);font-weight:700;font-size:22px;margin:0 0 12px;text-wrap:balance}
+h3{font-family:var(--display);font-weight:700;font-size:16px;margin:18px 0 8px}
+p{margin:0 0 10px;max-width:65ch}
+.view{display:none}
+.view.active{display:block}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+label{font-size:13px;color:var(--muted);font-weight:500}
+select,input[type=number]{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;min-height:42px}
+select{min-width:220px;max-width:100%}
+input[type=number]{width:90px;font-variant-numeric:tabular-nums}
+button{font:inherit;font-weight:600;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 14px;min-height:42px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn-link{display:inline-flex;align-items:center;min-height:42px;padding:9px 16px;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-weight:600;text-decoration:none}
+.btn-link:hover{filter:brightness(1.08)}
+.btn-link:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+button.ghost{background:transparent}
+button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button.yes[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#fff}
+button.no[aria-pressed="true"]{background:var(--muted);border-color:var(--muted);color:#fff}
+.stepper{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 0 10px}
+.stepper .mid{font-family:var(--display);font-weight:700;font-size:18px}
+.big{border-left:5px solid var(--accent)}
+.big .eyebrow{font-size:13px;color:var(--muted);font-weight:500;letter-spacing:0.02em;text-transform:uppercase}
+.big .partner{font-family:var(--display);font-weight:700;font-size:clamp(24px,5vw,32px);line-height:1.1;margin:4px 0 6px;text-wrap:balance}
+.big .seat{font-size:18px;font-variant-numeric:tabular-nums}
+.big .seat strong{font-family:var(--display)}
+.poster{margin-top:14px;border:1px dashed var(--line);border-radius:10px;background:var(--bg);min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;overflow:hidden}
+.poster img{max-width:100%;display:block}
+.poster.has img{width:100%}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.now td{background:var(--accent-soft)}
+.tablewrap{overflow-x:auto}
+.slothead{font-family:var(--display);font-weight:700;font-size:15px;margin:18px 0 6px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.slothead span{color:var(--muted);font-weight:500;font-family:var(--body);font-size:13px}
+.pairs{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.pair{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}
+.pair .t{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600}
+.pair .n{display:flex;flex-direction:column;gap:2px;margin-top:2px}
+.pair .n span{display:flex;gap:6px;align-items:baseline}
+.pair .n b{font-weight:600;font-size:11px;color:var(--muted);min-width:12px}
+.bye{opacity:0.75;border-style:dashed}
+.timer{text-align:center;padding:26px 18px}
+.timer .phase{font-size:14px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-weight:600}
+.timer .clock{font-family:var(--display);font-weight:700;font-size:clamp(64px,18vw,120px);line-height:1;font-variant-numeric:tabular-nums;margin:6px 0}
+.timer.switch .clock{color:var(--accent)}
+.timer .round{font-size:18px}
+.timer .controls{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}
+.settings div{display:flex;flex-direction:column;gap:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.pcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.pcard .ph{aspect-ratio:1/1.414;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;padding:12px;border-bottom:1px solid var(--line)}
+.pcard .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.pcard .pn{padding:10px 12px;font-weight:600;font-size:14px}
+.note{font-size:14px;color:var(--muted)}
+.ok{color:var(--ok);font-weight:600}
+.steps{padding-left:20px;margin:0 0 12px}
+.steps li{margin-bottom:6px;max-width:65ch}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;font-size:15px;margin-bottom:12px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+.map{display:grid;grid-template-columns:auto repeat(13,minmax(54px,1fr));gap:4px;font-size:11px;align-items:stretch;min-width:760px}
+.map .lab{color:var(--muted);font-weight:600;display:flex;align-items:center;padding-right:6px}
+.map .cell{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 4px;text-align:center;line-height:1.2;word-break:break-word}
+.map .cell.anchor{border-color:var(--accent);background:var(--accent-soft)}
+.map .tn{text-align:center;color:var(--muted);font-weight:600}
+.arrow{color:var(--muted);text-align:center;font-size:12px;margin:4px 0}
+.poster img,.pcard .ph img{cursor:zoom-in}
+#lightbox{position:fixed;inset:0;background:rgba(10,12,18,0.92);display:none;z-index:50;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pinch-zoom pan-x pan-y}
+#lightbox.open{display:block}
+#lightbox img{display:block;width:100%;max-width:1200px;height:auto;margin:48px auto 24px}
+#lightbox .close{position:fixed;top:12px;right:12px;background:#fff;color:#111;border:0;border-radius:999px;min-height:40px;padding:8px 14px;font-weight:600}
+#lightbox .cap{position:fixed;top:16px;left:16px;color:#fff;font-weight:600;font-size:14px}
+@media (prefers-reduced-motion: no-preference){ button{transition:background .15s,border-color .15s} }
+@media (max-width:420px){ .stepper .mid{font-size:16px} select{min-width:0;width:100%} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="lead">
+    <div class="heart" aria-hidden="true">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 21.3C9.6 19.2 2.5 14.3 2.5 8.9 2.5 6 4.7 3.8 7.4 3.8c1.9 0 3.5 1 4.6 2.6 1.1-1.6 2.7-2.6 4.6-2.6 2.7 0 4.9 2.2 4.9 5.1 0 5.4-7.1 10.3-9.5 12.4z"/></svg>
+    </div>
+    <div class="titles">
+      <h1>RoCS Retreat Speed Dating</h1>
+      <p class="sub">25–26 November 2026 · Svein Rosselands hus · <span id="hdr-stats"></span></p>
+    </div>
+  </div>
+  <a class="logo" href="#me" aria-label="Rosseland Centre for Solar Physics"><img src="rocs-logo.png" alt="Rosseland Centre for Solar Physics"></a>
+</header>
+<nav id="nav">
+  <a href="#me">My schedule</a>
+  <a href="#rounds">Round by round</a>
+  <a href="#timer">Timer</a>
+  <a href="#posters">Posters</a>
+  <a href="#how">How it works</a>
+</nav>
+
+<!-- MY SCHEDULE -->
+<section class="view" id="view-me">
+  <div class="row">
+    <label for="who">I am</label>
+    <select id="who"></select>
+  </div>
+  <div class="stepper">
+    <button id="prev" class="ghost" type="button">← Previous</button>
+    <div class="mid" id="round-label">Round 1</div>
+    <button id="next" class="ghost" type="button">Next →</button>
+  </div>
+  <div class="card big" id="now-card"></div>
+  <h3>All 25 conversations</h3>
+  <div class="tablewrap"><table id="me-table"></table></div>
+</section>
+
+<!-- ROUND BY ROUND -->
+<section class="view" id="view-rounds">
+  <div class="row">
+    <label for="round-select">Round</label>
+    <select id="round-select"></select>
+    <button id="toggle-all" type="button">Show all rounds</button>
+  </div>
+  <div id="rounds-out"></div>
+</section>
+
+<!-- TIMER -->
+<section class="view" id="view-timer">
+  <div class="card timer" id="timer-card">
+    <div class="phase" id="t-phase">Ready</div>
+    <div class="clock" id="t-clock">7:00</div>
+    <div class="round" id="t-round">Round 1 of 25 · Slot 1</div>
+    <div class="controls">
+      <button class="primary" id="t-start" type="button">Start</button>
+      <button id="t-skip" type="button">Skip to switch</button>
+      <button id="t-nextround" type="button">Next round</button>
+      <button class="ghost" id="t-reset" type="button">Reset round</button>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="settings">
+      <div><label for="t-talk">Talking (min)</label><input type="number" id="t-talk" min="1" max="30" step="0.5" value="7"></div>
+      <div><label for="t-switch">Moving (min)</label><input type="number" id="t-switch" min="0" max="10" step="0.5" value="1.5"></div>
+      <div><label for="t-roundsel">Jump to round</label><select id="t-roundsel"></select></div>
+      <div><label for="t-sound">Sound</label><select id="t-sound"><option value="on">Beep at each change</option><option value="off">Silent</option></select></div>
+    </div>
+    <p class="note" style="margin-top:12px">Runs on the clock-keeper's device only. Five rounds in every slot. Slots 1–3 (45 min): 7 min talking + 90 s moving, 42.5 min in all, so start the first round within 2.5 min of the slot opening. Slots 4–5 (60 min): 9½ min + 90 s, 55 min in all. Jumping to a slot's first round restores that slot's lengths.</p>
+  </div>
+</section>
+
+<!-- POSTERS -->
+<section class="view" id="view-posters">
+  <div class="card" style="margin-bottom:16px">
+    <h2>Submit your poster</h2>
+    <p>One page, PDF, named <strong>first_name-last_name.pdf</strong>. Bring a printed copy to the retreat as well.</p>
+    <div class="row">
+      <a class="btn-link" href="https://www.dropbox.com/request/pnuonzhg8hsasq089cxz">Upload</a>
+    </div>
+  </div>
+  <p class="note">Posters appear below once they have been added to the page; until then the card shows a placeholder.</p>
+  <div class="grid" id="poster-grid"></div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="view" id="view-how">
+  <div class="card">
+    <h2>Science speed dating, in short</h2>
+    <p>Short one-to-one conversations about your science, with a different colleague every round, until you have met everyone. Your one-page poster is the conversation starter: bring it printed and keep it with you.</p>
+    <h3>The numbers</h3>
+    <dl class="kv">
+      <dt>Slots</dt><dd>Five slots: three of 45 minutes, then two of one hour</dd>
+      <dt>Rounds</dt><dd>25 in total: 5 in every slot</dd>
+      <dt>One round</dt><dd>7 minutes talking in the 45-minute slots, 9½ in the one-hour slots; then a signal, then 90 seconds to move</dd>
+      <dt>Who you meet</dt><dd>All 25 of your colleagues, each exactly once</dd>
+      <dt>Tables</dt><dd>13 tables in a line, numbered 1 to 13, one chair on side A and one on side B</dd>
+    </dl>
+    <h3>What to do</h3>
+    <ol class="steps">
+      <li>Before the retreat, upload your one-page poster as a PDF via the <strong>Posters</strong> tab, and print a copy to bring along.</li>
+      <li>Open this page on your phone, choose your name under <strong>My schedule</strong>. It shows who you meet in each round and at which table and side.</li>
+      <li>Before the first round, go to your table for round 1.</li>
+      <li>Talk until the signal. A good split: 3 minutes each on what you work on and an idea you would like to pursue, the rest on where you could help each other. Anything that deserves longer continues over coffee or at dinner.</li>
+      <li>At the signal, stand up and move to your next table. The page tells you where; the rule below gives the same answer.</li>
+    </ol>
+    <h3>The moving rule</h3>
+    <p><strong id="how-anchor"></strong> stays at table 1, side A, all day. Everyone else moves one seat along the line after every round:</p>
+    <ol class="steps">
+      <li>Side A: move up one table (1 → 2 → … → 13).</li>
+      <li>At table 13 on side A: cross over to table 13, side B.</li>
+      <li>Side B: move down one table (13 → 12 → … → 1).</li>
+      <li>At table 1 on side B: cross over to table 2, side A.</li>
+    </ol>
+    <p>This is why nobody meets the same person twice. If someone is away for a round, their partner simply has a coffee break; nothing else changes.</p>
+    <h3>Round 1 seating map</h3>
+    <div class="tablewrap" id="map-out"></div>
+  </div>
+</section>
+</div>
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="Poster, enlarged">
+  <span class="cap" id="lb-cap"></span>
+  <button class="close" id="lb-close" type="button">Close</button>
+  <img id="lb-img" alt="">
+</div>
+
+<script>
+// ---------- Data ----------
+// Order matters only for who meets whom in which round, not for coverage: every pair meets exactly once.
+// Index 0 is the anchor (fixed seat: table 1, side A).
+const PEOPLE = [
+  "Souvik Bose","Yixiao Zhou","Mats Kirkaune","Andrius Popovas","Benedikte Fagerli Karlsen",
+  "Sven Wedemeyer","Ignasi Soler Poquet","Gaojian Liu","Reetika Joshi","Boris Gudiksen","Aline Rangøy Brunvoll",
+  "Whitney Powers","Mats Carlsson","Maryam Saberi","Oliver Flor","Eyrun Thune","Quan Xie","Tiago Pereira",
+  "Valeriia Liakh","Harsh Mathur","Mikolaj Szydlarski","Pooja Devi","Luc Rouppe van der Voort","Oscar Soler",
+  "Semya A. Tønnessen","Petra Kohutova"
+];
+// Five slots (45, 45, 45, 60, 60 min), 5 rounds in each = all 25 rounds:
+//   45-min slots: 5 × (7 min talking + 1.5 min moving) = 42.5 min (2.5 min to settle in)
+//   60-min slots: 5 × (9.5 min talking + 1.5 min moving) = 55 min (5 min to settle in)
+const SLOTS = [
+  {slot:1, len:45, from:1,  to:5,  talk:7,   sw:1.5},
+  {slot:2, len:45, from:6,  to:10, talk:7,   sw:1.5},
+  {slot:3, len:45, from:11, to:15, talk:7,   sw:1.5},
+  {slot:4, len:60, from:16, to:20, talk:9.5, sw:1.5},
+  {slot:5, len:60, from:21, to:25, talk:9.5, sw:1.5}
+];
+const SCHEDULED = SLOTS[SLOTS.length-1].to;   // rounds beyond this are not run; those pairs meet over dinner or coffee
+const BYE = "(coffee break)";
+
+function slug(s){
+  return s.toLowerCase().replace(/ø/g,"o").replace(/æ/g,"ae").replace(/å/g,"a")
+    .normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+}
+
+// Circle method. Position 0 is fixed; positions 1..n-1 rotate by +1 each round.
+// Loop positions: 0..T-1 = tables 1..T side A; T..n-1 = tables T..1 side B.
+function buildSchedule(names){
+  const people = names.slice();
+  if (people.length % 2 === 1) people.push(BYE);
+  const n = people.length, T = n/2, R = n-1;
+  const posToSeat = p => p < T ? {table:p+1, side:"A"} : {table:2*T-p, side:"B"};
+  const rounds = [];
+  for (let r=0; r<R; r++){
+    const seat = new Array(n);
+    seat[0] = 0;
+    for (let p=1; p<n; p++){
+      const k = ((p-1-r) % R + R) % R;    // person index among the rotating group
+      seat[1+k] = p;
+    }
+    const byTable = {};
+    for (let person=0; person<n; person++){
+      const s = posToSeat(seat[person]);
+      byTable[s.table] = byTable[s.table] || {};
+      byTable[s.table][s.side] = person;
+    }
+    const pairs = [];
+    for (let t=1; t<=T; t++) pairs.push({table:t, a:byTable[t].A, b:byTable[t].B});
+    rounds.push(pairs);
+  }
+  // per-person index
+  const mine = people.map(()=>[]);
+  rounds.forEach((pairs, r) => pairs.forEach(pr => {
+    mine[pr.a][r] = {partner:pr.b, table:pr.table, side:"A"};
+    mine[pr.b][r] = {partner:pr.a, table:pr.table, side:"B"};
+  }));
+  return {people, rounds, mine, T, R};
+}
+function verify(S){
+  const seen = new Set();
+  for (const pairs of S.rounds){
+    const inRound = new Set();
+    for (const {a,b} of pairs){
+      if (inRound.has(a)||inRound.has(b)) return false;
+      inRound.add(a); inRound.add(b);
+      const key = Math.min(a,b)+"-"+Math.max(a,b);
+      if (seen.has(key)) return false;
+      seen.add(key);
+    }
+  }
+  const n = S.people.length;
+  return seen.size === n*(n-1)/2;
+}
+
+const S = buildSchedule(PEOPLE);
+const REAL = PEOPLE.length;
+const slotOf = r => SLOTS.find(s => r>=s.from && r<=s.to) || null;
+const isBye = i => S.people[i] === BYE;
+const roundName = r => r<=SCHEDULED ? "Round "+r : "Not scheduled";
+
+// ---------- Storage (one device only) ----------
+const store = {
+  get(k, d){ try { const v = localStorage.getItem("rocs-sd:"+k); return v===null ? d : JSON.parse(v); } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem("rocs-sd:"+k, JSON.stringify(v)); } catch(e){} }
+};
+
+// ---------- Helpers ----------
+const $ = id => document.getElementById(id);
+function el(tag, attrs, ...kids){
+  const e = document.createElement(tag);
+  for (const k in (attrs||{})){
+    if (k==="class") e.className = attrs[k];
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), attrs[k]);
+    else e.setAttribute(k, attrs[k]);
+  }
+  for (const kid of kids){ if (kid==null) continue; e.append(kid.nodeType ? kid : document.createTextNode(kid)); }
+  return e;
+}
+function openLightbox(src, name){
+  $("lb-img").src = src; $("lb-img").alt = "Poster of "+name; $("lb-cap").textContent = name;
+  $("lightbox").classList.add("open"); $("lightbox").scrollTop = 0;
+}
+function closeLightbox(){ $("lightbox").classList.remove("open"); $("lb-img").src = ""; }
+$("lb-close").addEventListener("click", closeLightbox);
+$("lightbox").addEventListener("click", e => { if (e.target.id === "lightbox") closeLightbox(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeLightbox(); });
+
+function posterBox(personIdx, cls){
+  const box = el("div", {class:"poster "+(cls||"")});
+  if (isBye(personIdx)) { box.textContent = "No partner this round"; return box; }
+  const img = el("img", {alt:"Poster of "+S.people[personIdx], src:"posters/"+slug(S.people[personIdx])+".png",
+    onclick: () => openLightbox(img.src, S.people[personIdx])});
+  const ph = el("span", {}, "Poster not uploaded yet");
+  img.addEventListener("error", () => { img.remove(); box.classList.remove("has"); box.append(ph); });
+  img.addEventListener("load", () => box.classList.add("has"));
+  box.append(img);
+  return box;
+}
+function fillPeopleSelect(sel){
+  sel.innerHTML = "";
+  sel.append(el("option", {value:""}, "Choose your name…"));
+  S.people.forEach((name, i) => { if (!isBye(i)) sel.append(el("option", {value:String(i)}, name)); });
+}
+
+// ---------- State ----------
+let who = store.get("who", "");
+let round = store.get("round", 1);
+
+// ---------- Header + how ----------
+$("hdr-stats").textContent = REAL+" participants · "+SCHEDULED+" rounds";
+$("how-anchor").textContent = S.people[0];
+
+// ---------- My schedule ----------
+const whoSel = $("who");
+fillPeopleSelect(whoSel);
+whoSel.value = who;
+function setWho(v){ who = v; store.set("who", v); whoSel.value = v; renderMe(); }
+whoSel.addEventListener("change", e => setWho(e.target.value));
+$("prev").addEventListener("click", () => setRound(round-1));
+$("next").addEventListener("click", () => setRound(round+1));
+function setRound(r){ round = Math.min(S.R, Math.max(1, r)); store.set("round", round); renderMe(); }
+
+function renderMe(){
+  const card = $("now-card"), tbl = $("me-table");
+  $("round-label").textContent = round<=SCHEDULED ? "Round "+round+" of "+SCHEDULED : "Not scheduled";
+  card.innerHTML = ""; tbl.innerHTML = "";
+  if (who===""){ card.append(el("p", {}, "Choose your name above to see who you are meeting, and where.")); return; }
+  const me = Number(who);
+  const m = S.mine[me][round-1], sl = slotOf(round);
+  if (sl){
+    card.append(
+      el("div", {class:"eyebrow"}, "Round "+round+" · Slot "+sl.slot+" · "+sl.talk+" min"),
+      el("div", {class:"partner"}, isBye(m.partner) ? "Coffee break" : el("span", {}, el("span", {class:"mini", "aria-hidden":"true"}, "♥"), "with "+S.people[m.partner])),
+      el("div", {class:"seat"}, "Table ", el("strong", {}, String(m.table)), " · side ", el("strong", {}, m.side), me===0 ? " (you stay put)" : ""),
+      posterBox(m.partner)
+    );
+  } else {
+    card.append(
+      el("div", {class:"eyebrow"}, "No round for this pair"),
+      el("div", {class:"partner"}, isBye(m.partner) ? "Nobody" : S.people[m.partner]),
+      el("div", {class:"seat"}, "The only colleague you have no round with. Find each other over coffee or at dinner."),
+      posterBox(m.partner)
+    );
+  }
+  const thead = el("thead", {}, el("tr", {}, el("th", {}, "Round"), el("th", {}, "Partner"), el("th", {}, "Table"), el("th", {}, "Side")));
+  tbl.append(thead);
+  let tbody = null, lastSlot = 0;
+  for (let r=1; r<=S.R; r++){
+    const sl = slotOf(r);
+    const key = sl ? sl.slot : "x";
+    if (key !== lastSlot){
+      lastSlot = key;
+      tbody = el("tbody");
+      tbody.append(el("tr", {}, el("td", {colspan:"4", style:"font-family:var(--display);font-weight:700;background:var(--bg)"},
+        sl ? "Slot "+sl.slot+" ("+sl.len+" min) · rounds "+sl.from+"–"+sl.to+" · "+sl.talk+" min each" : "Not scheduled · find each other over coffee or at dinner")));
+      tbl.append(tbody);
+    }
+    const x = S.mine[me][r-1];
+    const tr = el("tr", {class: r===round ? "now" : "", style:"cursor:pointer", onclick: () => setRound(r)},
+      el("td", {class:"num"}, sl ? String(r) : "–"),
+      el("td", {}, isBye(x.partner) ? el("i", {}, "coffee break") : S.people[x.partner]),
+      el("td", {class:"num"}, sl ? String(x.table) : "–"),
+      el("td", {}, sl ? x.side : "–"));
+    tbody.append(tr);
+  }
+}
+
+// ---------- Round by round ----------
+const roundSel = $("round-select");
+for (let r=1; r<=S.R; r++) roundSel.append(el("option", {value:String(r)}, slotOf(r) ? "Round "+r+" (slot "+slotOf(r).slot+")" : "Unscheduled pairs (dinner)"));
+let showAll = false;
+roundSel.addEventListener("change", renderRounds);
+$("toggle-all").addEventListener("click", () => { showAll = !showAll; $("toggle-all").textContent = showAll ? "Show one round" : "Show all rounds"; renderRounds(); });
+function roundBlock(r){
+  const sl = slotOf(r);
+  const wrap = el("div");
+  wrap.append(el("div", {class:"slothead"}, sl ? "Round "+r : "Pairs with no round",
+    el("span", {}, sl ? "Slot "+sl.slot+" ("+sl.len+" min) · "+sl.talk+" min talking + "+sl.sw+" min moving" : "These pairs find each other over coffee or at dinner")));
+  const grid = el("div", {class:"pairs"});
+  for (const pr of S.rounds[r-1]){
+    const bye = isBye(pr.a)||isBye(pr.b);
+    grid.append(el("div", {class:"pair"+(bye?" bye":"")},
+      el("div", {class:"t"}, sl ? "Table "+pr.table : "Pair "+pr.table),
+      el("div", {class:"n"},
+        el("span", {}, el("b", {}, "A"), S.people[pr.a]),
+        el("span", {}, el("b", {}, "B"), S.people[pr.b]))));
+  }
+  wrap.append(grid);
+  return wrap;
+}
+function renderRounds(){
+  const out = $("rounds-out"); out.innerHTML = "";
+  if (showAll){ for (let r=1; r<=S.R; r++) out.append(roundBlock(r)); }
+  else out.append(roundBlock(Number(roundSel.value)));
+}
+
+// ---------- Seating map (round 1) ----------
+function renderMap(){
+  const out = $("map-out"); out.innerHTML = "";
+  const pairs = S.rounds[0];
+  const g = el("div", {class:"map"});
+  g.append(el("div", {class:"lab"}, ""));
+  pairs.forEach(p => g.append(el("div", {class:"tn"}, "T"+p.table)));
+  g.append(el("div", {class:"lab"}, "Side A →"));
+  pairs.forEach(p => g.append(el("div", {class:"cell"+(p.a===0?" anchor":"")}, S.people[p.a])));
+  g.append(el("div", {class:"lab"}, "← Side B"));
+  pairs.forEach(p => g.append(el("div", {class:"cell"}, S.people[p.b])));
+  out.append(g, el("div", {class:"arrow"}, "Side A walks toward table 13, crosses over, side B walks back toward table 1, crosses over to table 2 A. The highlighted seat never moves."));
+}
+
+// ---------- Timer ----------
+const T = { phase:"ready", remaining:0, running:false, round:1, tick:null, audio:null };
+const tRoundSel = $("t-roundsel");
+for (let r=1; r<=SCHEDULED; r++) tRoundSel.append(el("option", {value:String(r)}, "Round "+r+" (slot "+slotOf(r).slot+")"));
+function fmt(sec){ sec=Math.max(0,Math.round(sec)); return Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"); }
+function talkSec(){ return Number($("t-talk").value||9)*60; }
+function switchSec(){ return Number($("t-switch").value||0)*60; }
+function tRender(){
+  const card = $("timer-card");
+  card.classList.toggle("switch", T.phase==="switch");
+  $("t-phase").textContent = T.phase==="ready" ? "Ready" : T.phase==="talk" ? (T.running?"Talking":"Paused") : (T.running?"Switch seats":"Paused (switch)");
+  $("t-clock").textContent = fmt(T.phase==="ready" ? talkSec() : T.remaining);
+  $("t-round").textContent = "Round "+T.round+" of "+SCHEDULED+" · Slot "+slotOf(T.round).slot;
+  $("t-start").textContent = T.running ? "Pause" : (T.phase==="ready" ? "Start" : "Resume");
+  tRoundSel.value = String(T.round);
+}
+function beep(times){
+  if ($("t-sound").value!=="on" || !T.audio) return;
+  try {
+    for (let i=0;i<times;i++){
+      const o = T.audio.createOscillator(), g = T.audio.createGain();
+      o.frequency.value = 880; o.connect(g); g.connect(T.audio.destination);
+      const t0 = T.audio.currentTime + i*0.35;
+      g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(0.3,t0+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.25);
+      o.start(t0); o.stop(t0+0.3);
+    }
+  } catch(e){}
+}
+function tStartPhase(phase){
+  T.phase = phase; T.remaining = phase==="talk" ? talkSec() : switchSec();
+  if (phase==="switch" && T.remaining===0){ tAdvanceRound(); return; }
+  tRender();
+}
+function tAdvanceRound(){
+  if (T.round >= SCHEDULED){ T.running=false; T.phase="ready"; clearInterval(T.tick); tRender(); $("t-phase").textContent="All rounds done"; return; }
+  tSetRound(T.round+1); tStartPhase("talk");
+}
+function tSetRound(r){
+  const prevSlot = slotOf(T.round).slot;
+  T.round = Math.min(SCHEDULED, Math.max(1, r));
+  const sl = slotOf(T.round);
+  if (sl.slot!==prevSlot || T.round===sl.from){ $("t-talk").value = sl.talk; $("t-switch").value = sl.sw; }
+  tRender();
+}
+$("t-start").addEventListener("click", () => {
+  if (!T.audio){ try { T.audio = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} }
+  if (T.running){ T.running=false; clearInterval(T.tick); tRender(); return; }
+  if (T.phase==="ready") tStartPhase("talk");
+  T.running = true; tRender();
+  let last = Date.now();
+  clearInterval(T.tick);
+  T.tick = setInterval(() => {
+    const now = Date.now(); T.remaining -= (now-last)/1000; last = now;
+    if (T.remaining <= 0){
+      if (T.phase==="talk"){ beep(2); tStartPhase("switch"); }
+      else { beep(3); tAdvanceRound(); }
+    }
+    tRender();
+  }, 250);
+});
+$("t-skip").addEventListener("click", () => { if (T.phase!=="switch"){ beep(2); tStartPhase("switch"); } });
+$("t-nextround").addEventListener("click", () => { tSetRound(T.round+1); tStartPhase("talk"); });
+$("t-reset").addEventListener("click", () => { T.running=false; clearInterval(T.tick); T.phase="ready"; tRender(); });
+tRoundSel.addEventListener("change", e => { T.running=false; clearInterval(T.tick); T.phase="ready"; tSetRound(Number(e.target.value)); });
+$("t-talk").addEventListener("change", tRender);
+
+// ---------- Posters ----------
+function renderPosters(){
+  const g = $("poster-grid"); g.innerHTML = "";
+  S.people.forEach((name, i) => {
+    if (isBye(i)) return;
+    const ph = el("div", {class:"ph"});
+    const img = el("img", {alt:"Poster of "+name, src:"posters/"+slug(name)+".png", onclick: () => openLightbox(img.src, name)});
+    img.addEventListener("error", () => { img.remove(); ph.textContent = "Poster not uploaded yet"; });
+    ph.append(img);
+    g.append(el("div", {class:"pcard"}, ph, el("div", {class:"pn"}, name)));
+  });
+}
+
+// ---------- Routing ----------
+const VIEWS = ["me","rounds","timer","posters","how"];
+function route(){
+  let h = (location.hash||"#me").slice(1);
+  if (!VIEWS.includes(h)) h = "me";
+  VIEWS.forEach(v => $("view-"+v).classList.toggle("active", v===h));
+  document.querySelectorAll("#nav a").forEach(a => a.classList.toggle("active", a.getAttribute("href")==="#"+h));
+}
+window.addEventListener("hashchange", route);
+
+// ---------- Boot ----------
+if (!verify(S)) $("hdr-stats").textContent += " · schedule check failed";
+renderMe(); renderRounds(); renderMap(); tRender(); renderPosters(); route();
+</script>
+</body>
+</html>
