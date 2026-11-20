@@ -220,7 +220,7 @@ tr.now td{background:var(--accent-soft)}
     <h2>Submit your poster</h2>
     <p>One page, PDF, named <strong>first_name-last_name.pdf</strong>. Bring a printed copy to the retreat as well.</p>
     <div class="row">
-      <a class="btn-link" href="https://www.dropbox.com/request/pnuonzhg8hsasq089cxz">Upload</a>
+      <a class="btn-link" href="https://www.dropbox.com/request/pnuonzhg8hsasq089cxz" target="_blank" rel="noopener">Upload</a>
     </div>
   </div>
   <p class="note">Posters appear below once they have been added to the page; until then the card shows a placeholder.</p>
@@ -350,7 +350,6 @@ const S = buildSchedule(PEOPLE);
 const REAL = PEOPLE.length;
 const slotOf = r => SLOTS.find(s => r>=s.from && r<=s.to) || null;
 const isBye = i => S.people[i] === BYE;
-const roundName = r => r<=SCHEDULED ? "Round "+r : "Not scheduled";
 
 // ---------- Storage (one device only) ----------
 const store = {
@@ -373,8 +372,14 @@ function el(tag, attrs, ...kids){
 function openLightbox(src, name){
   $("lb-img").src = src; $("lb-img").alt = "Poster of "+name; $("lb-cap").textContent = name;
   $("lightbox").classList.add("open"); $("lightbox").scrollTop = 0;
+  document.body.style.overflow = "hidden";
+  $("lb-close").focus();
 }
-function closeLightbox(){ $("lightbox").classList.remove("open"); $("lb-img").src = ""; }
+function closeLightbox(){
+  if (!$("lightbox").classList.contains("open")) return;
+  $("lightbox").classList.remove("open"); $("lb-img").removeAttribute("src");
+  document.body.style.overflow = "";
+}
 $("lb-close").addEventListener("click", closeLightbox);
 $("lightbox").addEventListener("click", e => { if (e.target.id === "lightbox") closeLightbox(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeLightbox(); });
@@ -397,8 +402,20 @@ function fillPeopleSelect(sel){
 }
 
 // ---------- State ----------
-let who = store.get("who", "");
-let round = store.get("round", 1);
+// "who" is remembered by name slug, so a saved identity survives changes to the list.
+function loadWho(){
+  const v = store.get("who", "");
+  if (v === "" || v == null) return "";
+  let idx = S.people.findIndex((n, i) => !isBye(i) && slug(n) === String(v));
+  if (idx < 0 && /^\d+$/.test(String(v))) idx = Number(v);          // older saves used the position
+  return (Number.isInteger(idx) && idx >= 0 && idx < REAL) ? String(idx) : "";
+}
+function loadRound(){
+  const r = Number(store.get("round", 1));
+  return (Number.isInteger(r) && r >= 1 && r <= S.R) ? r : 1;
+}
+let who = loadWho();
+let round = loadRound();
 
 // ---------- Header + how ----------
 $("hdr-stats").textContent = REAL+" participants · "+SCHEDULED+" rounds";
@@ -408,7 +425,7 @@ $("how-anchor").textContent = S.people[0];
 const whoSel = $("who");
 fillPeopleSelect(whoSel);
 whoSel.value = who;
-function setWho(v){ who = v; store.set("who", v); whoSel.value = v; renderMe(); }
+function setWho(v){ who = v; store.set("who", v==="" ? "" : slug(S.people[Number(v)])); whoSel.value = v; renderMe(); }
 whoSel.addEventListener("change", e => setWho(e.target.value));
 $("prev").addEventListener("click", () => setRound(round-1));
 $("next").addEventListener("click", () => setRound(round+1));
@@ -507,17 +524,28 @@ const T = { phase:"ready", remaining:0, running:false, round:1, tick:null, audio
 const tRoundSel = $("t-roundsel");
 for (let r=1; r<=SCHEDULED; r++) tRoundSel.append(el("option", {value:String(r)}, "Round "+r+" (slot "+slotOf(r).slot+")"));
 function fmt(sec){ sec=Math.max(0,Math.round(sec)); return Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"); }
-function talkSec(){ return Number($("t-talk").value||9)*60; }
-function switchSec(){ return Number($("t-switch").value||0)*60; }
+// A blank or invalid field falls back to the current slot's default, never to a hidden number.
+function talkSec(){ const v=parseFloat($("t-talk").value); return (isFinite(v) && v>0 ? v : slotOf(T.round).talk)*60; }
+function switchSec(){ const v=parseFloat($("t-switch").value); return (isFinite(v) && v>=0 ? v : slotOf(T.round).sw)*60; }
 function tRender(){
   const card = $("timer-card");
   card.classList.toggle("switch", T.phase==="switch");
-  $("t-phase").textContent = T.phase==="ready" ? "Ready" : T.phase==="talk" ? (T.running?"Talking":"Paused") : (T.running?"Switch seats":"Paused (switch)");
-  $("t-clock").textContent = fmt(T.phase==="ready" ? talkSec() : T.remaining);
+  $("t-phase").textContent = T.phase==="ready" ? "Ready" : T.phase==="done" ? "All rounds done" : T.phase==="talk" ? (T.running?"Talking":"Paused") : (T.running?"Switch seats":"Paused (switch)");
+  $("t-clock").textContent = fmt(T.phase==="ready" ? talkSec() : T.phase==="done" ? 0 : T.remaining);
   $("t-round").textContent = "Round "+T.round+" of "+SCHEDULED+" · Slot "+slotOf(T.round).slot;
-  $("t-start").textContent = T.running ? "Pause" : (T.phase==="ready" ? "Start" : "Resume");
+  $("t-start").textContent = T.running ? "Pause" : (T.phase==="ready" ? "Start" : T.phase==="done" ? "Done" : "Resume");
+  $("t-start").disabled = T.phase==="done";
   tRoundSel.value = String(T.round);
 }
+// Keep the clock-keeper's screen awake while the timer runs (where the browser allows it).
+let wakeLock = null;
+async function keepAwake(on){
+  try {
+    if (on && navigator.wakeLock && !wakeLock){ wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", () => { wakeLock = null; }); }
+    if (!on && wakeLock){ await wakeLock.release(); wakeLock = null; }
+  } catch(e){ wakeLock = null; }
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState==="visible" && T.running) keepAwake(true); });
 function beep(times){
   if ($("t-sound").value!=="on" || !T.audio) return;
   try {
@@ -536,7 +564,7 @@ function tStartPhase(phase){
   tRender();
 }
 function tAdvanceRound(){
-  if (T.round >= SCHEDULED){ T.running=false; T.phase="ready"; clearInterval(T.tick); tRender(); $("t-phase").textContent="All rounds done"; return; }
+  if (T.round >= SCHEDULED){ T.running=false; T.phase="done"; T.remaining=0; clearInterval(T.tick); keepAwake(false); tRender(); return; }
   tSetRound(T.round+1); tStartPhase("talk");
 }
 function tSetRound(r){
@@ -547,25 +575,31 @@ function tSetRound(r){
   tRender();
 }
 $("t-start").addEventListener("click", () => {
+  if (T.phase==="done") return;
   if (!T.audio){ try { T.audio = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} }
-  if (T.running){ T.running=false; clearInterval(T.tick); tRender(); return; }
+  try { if (T.audio && T.audio.state==="suspended") T.audio.resume(); } catch(e){}   // iOS keeps it suspended until a tap
+  if (T.running){ T.running=false; clearInterval(T.tick); keepAwake(false); tRender(); return; }
   if (T.phase==="ready") tStartPhase("talk");
-  T.running = true; tRender();
+  T.running = true; keepAwake(true); tRender();
   let last = Date.now();
   clearInterval(T.tick);
   T.tick = setInterval(() => {
     const now = Date.now(); T.remaining -= (now-last)/1000; last = now;
-    if (T.remaining <= 0){
+    // If the phone slept through a phase, carry the missed time into the next one instead of restarting it.
+    let guard = 0;
+    while (T.running && T.remaining <= 0 && guard++ < 60){
+      const over = -T.remaining;
       if (T.phase==="talk"){ beep(2); tStartPhase("switch"); }
       else { beep(3); tAdvanceRound(); }
+      if (T.running && T.phase!=="done") T.remaining -= over;
     }
     tRender();
   }, 250);
 });
-$("t-skip").addEventListener("click", () => { if (T.phase!=="switch"){ beep(2); tStartPhase("switch"); } });
-$("t-nextround").addEventListener("click", () => { tSetRound(T.round+1); tStartPhase("talk"); });
-$("t-reset").addEventListener("click", () => { T.running=false; clearInterval(T.tick); T.phase="ready"; tRender(); });
-tRoundSel.addEventListener("change", e => { T.running=false; clearInterval(T.tick); T.phase="ready"; tSetRound(Number(e.target.value)); });
+$("t-skip").addEventListener("click", () => { if (T.phase==="talk" || T.phase==="ready"){ beep(2); tStartPhase("switch"); } });
+$("t-nextround").addEventListener("click", () => { if (T.round>=SCHEDULED) return; tSetRound(T.round+1); tStartPhase("talk"); });
+$("t-reset").addEventListener("click", () => { T.running=false; clearInterval(T.tick); keepAwake(false); T.phase="ready"; tRender(); });
+tRoundSel.addEventListener("change", e => { T.running=false; clearInterval(T.tick); keepAwake(false); T.phase="ready"; tSetRound(Number(e.target.value)); });
 $("t-talk").addEventListener("change", tRender);
 
 // ---------- Posters ----------
@@ -593,7 +627,10 @@ window.addEventListener("hashchange", route);
 
 // ---------- Boot ----------
 if (!verify(S)) $("hdr-stats").textContent += " · schedule check failed";
-renderMe(); renderRounds(); renderMap(); tRender(); renderPosters(); route();
+// Each view boots on its own, so a problem in one never blanks the others.
+for (const step of [renderMe, renderRounds, renderMap, tRender, renderPosters, route]){
+  try { step(); } catch(e){ console.error(step.name, e); }
+}
 </script>
 </body>
 </html>
